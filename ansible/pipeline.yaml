@@ -1,7 +1,7 @@
 ---
   - name: Localhost Run.
     hosts: localhost
-    connection: local 
+    connection: local
 
     # Pre-Tasks to validate if Minikube is running
     pre_tasks:
@@ -13,7 +13,7 @@
       no_log: True
 
     # Otherwise will start minikube
-    - name: Start Minikube.
+    - name: Start Minikube. Will be ready in few minutes.
       command: minikube start --vm-driver=virtualbox
       when: "not minikube_status.stdout or 'Running' not in minikube_status.stdout"
 
@@ -24,23 +24,25 @@
     tasks:
     - name: Create Deployment.
       command: kubectl create -f ../manifests/deployment.yaml
-    
-    - name: Sleep for 15 seconds and continue with play.
+
+    - name: Sleep for 15 seconds and continue with play to have Service ready.
       wait_for:
         timeout: 15
       delegate_to: localhost
 
     - name: Create Service and Ingress.
       command: kubectl create -f ../manifests/networking.yaml
+    
+    - name: Sleep for 60 seconds and continue with play to get ingress IP.
+      wait_for:
+        timeout: 60
+      delegate_to: localhost
 
     post_tasks:
-    - name: Find LB IP
-      shell: export lb_ip=$(kubectl get ingress | grep "http-ingress" | awk {'print $4'})
+    - name: Get ingress IP
+      shell: echo Put the output in your /etc/hosts file ---- $(kubectl get ingress | grep "http-ingress" | awk {'print $4'}) test.com
+      register: lb_ip
 
-    - name: Print to stdout
-      shell: echo $lb_ip
-      register: echo
+    - set_fact: ingress_ip="{{ lb_ip.stdout }}"
 
-    - debug: msg="Put the output in your /etc/hosts file -> '{{ echo.stdout}} test.com'"
-
-
+    - debug: var=ingress_ip
