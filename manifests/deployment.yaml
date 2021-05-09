@@ -17,3 +17,21 @@ spec:
         image: valeriaverboloz/http_server:0.1
         ports:
         - containerPort: 80
+
+        livenessProbe:
+          exec:
+            command:
+            - bash
+            - -c
+            - 'curl http://localhost:80/healthcheck'
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+        readinessProbe:
+          exec:
+            command:
+            - bash
+            - -c
+            - 'curl http://localhost:80/healthcheck'
+          initialDelaySeconds: 5
+          periodSeconds: 5
